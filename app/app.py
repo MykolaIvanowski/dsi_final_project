@@ -13,17 +13,35 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(BASE_DIR)
 MODEL_DIR = os.path.join(PROJECT_ROOT, "model")
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
 def find_file(filename):
-    # Try: app/ -> model/ -> project root
+    # Try ALL possible locations — local + Railway layouts
     candidates = [
-        os.path.join(BASE_DIR, filename),
-        os.path.join(MODEL_DIR, filename),
-        os.path.join(PROJECT_ROOT, filename),
+        os.path.join(BASE_DIR, "model", filename),          # /app/model/ — Railway with COPY app/app.py ./app.py
+        os.path.join(BASE_DIR, filename),                   # /app/final_model.pkl
+        os.path.join(BASE_DIR, "..", "model", filename),    # dsi_final_project/model/ — local
+        os.path.join("/app", "model", filename),             # /app/model/ — absolute
+        os.path.join("/app", "app", "model", filename),     # /app/app/model/
+        os.path.join(os.path.dirname(BASE_DIR), "model", filename),
     ]
+    # Normalize .. in path
+    candidates = [os.path.normpath(p) for p in candidates]
     for path in candidates:
         if os.path.exists(path):
+            print(f"Found {filename} at: {path}")
             return path
-    return candidates[1]  # default to model/ for error message
+    # If not found, print what we checked — for Railway logs
+    print(f"NOT FOUND {filename}. Checked:")
+    for p in candidates:
+        print(f" - {p} exists={os.path.exists(p)}")
+    # List what actually exists in /app for debugging
+    try:
+        for root, dirs, files in os.walk("/app"):
+            print(f"DIR {root}: {files}")
+    except Exception:
+        pass
+    return candidates[0]  # return first for error message
 
 model = None
 scaler = None
